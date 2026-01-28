@@ -1,4 +1,4 @@
-# FastAPI Backend Assessment Project
+# Backend Assessment Project
 
 ## Overview
 
@@ -42,7 +42,7 @@ GET /users?skip=0&limit=10
 ### 2. Redis Caching
 
 - `GET /users` responses are cached in Redis
-- Cache key format: `users:{skip}:{limit}`
+- Cache key format: `users:{page}:{limit}`
 - Cache invalidates automatically when:
   - A user is created
   - A user is updated
@@ -133,11 +133,11 @@ Endpoints:
 ```
 app/
 │
-├── main.py
+├── cache.py
 ├── database.py
+├── main.py
 ├── models.py
 ├── schemas.py
-├── cache.py
 │
 └── routers/
     ├── users.py
@@ -151,8 +151,8 @@ app/
 ### 1. Clone the Repository
 
 ```
-git clone <repository_url>
-cd fastapi-backend
+git clone https://github.com/hitesh911/officesolutionsassessment.git
+cd officesolutionsassessment
 ```
 
 ---
@@ -164,13 +164,6 @@ Windows:
 ```
 python -m venv venv
 venv\Scripts\activate
-```
-
-Mac/Linux:
-
-```
-python3 -m venv venv
-source venv/bin/activate
 ```
 
 ---
@@ -188,7 +181,7 @@ pip install fastapi uvicorn sqlalchemy asyncpg redis python-dotenv
 Create a database named:
 
 ```
-fastapi_db
+officesolutions
 ```
 
 Create a `.env` file:
@@ -219,6 +212,7 @@ docker ps
 ```
 uvicorn app.main:app --reload
 ```
+
 
 Access Swagger UI:
 
@@ -266,16 +260,6 @@ http://127.0.0.1:8000/docs
 - Unit and integration testing
 - Docker Compose setup
 - CI/CD pipeline
-
----
-
-## Developer Documentation
-
-Detailed technical documentation is available in:
-
-```
-DEVELOPER_DOCUMENTATION.md
-```
 
 ---
 

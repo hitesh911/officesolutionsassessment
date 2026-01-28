@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException,status
 from psycopg2 import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
@@ -23,7 +23,7 @@ async def create_post(post: PostCreate, db: AsyncSession = Depends(get_db)):
             detail="User not found. Cannot create post."
         )
 
-    new_post = Post(**post.dict())
+    new_post = Post(**post.model_dump())
     db.add(new_post)
 
     try:
@@ -40,7 +40,7 @@ async def create_post(post: PostCreate, db: AsyncSession = Depends(get_db)):
 
 
 
-@router.get("/", response_model=list[PostOut])
+@router.get("/", response_model=list[PostOut],status_code=status.HTTP_201_CREATED)
 async def get_posts(user_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Post).where(Post.user_id == user_id))
     return result.scalars().all()

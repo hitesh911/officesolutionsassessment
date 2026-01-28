@@ -23,7 +23,6 @@ async def set_cache(key: str, value, expire: int = 60):
         ex=expire
     )
 
-
 async def invalidate_cache(pattern: str):
     async for key in redis_client.scan_iter(pattern):
         await redis_client.delete(key)

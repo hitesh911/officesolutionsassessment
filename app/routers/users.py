@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query , status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from app.database import get_db
 from app.models import User
 from app.schemas import UserCreate, UserUpdate, UserOut
@@ -10,9 +10,9 @@ from app.cache import get_cache, set_cache, invalidate_cache
 router = APIRouter(prefix="/users", tags=["Users"])
 
 
-@router.post("/", response_model=UserOut)
+@router.post("/", response_model=UserOut,status_code=status.HTTP_201_CREATED)
 async def create_user(user: UserCreate, db: AsyncSession = Depends(get_db)):
-    new_user = User(**user.dict())
+    new_user = User(**user.model_dump())
     db.add(new_user)
     await db.commit()
     await db.refresh(new_user)
@@ -20,18 +20,42 @@ async def create_user(user: UserCreate, db: AsyncSession = Depends(get_db)):
     return new_user
 
 
-@router.get("/", response_model=list[UserOut])
-async def get_users(skip: int = 0, limit: int = 10, db: AsyncSession = Depends(get_db)):
-    cache_key = f"users:{skip}:{limit}"
+@router.get("/")
+async def get_users(
+    page: int = Query(1, ge=1),
+    limit: int = Query(10, ge=1, le=100),
+    db: AsyncSession = Depends(get_db)
+):
+    
+    cache_key = f"users:{page}:{limit}"
     cached = await get_cache(cache_key)
     if cached:
         return cached
+    
+    # calculated offset 
+    skip = (page - 1) * limit
 
-    result = await db.execute(select(User).offset(skip).limit(limit))
+    total_result = await db.execute(select(func.count(User.id))) 
+    total = total_result.scalar()
+
+    result = await db.execute(
+        select(User).offset(skip).limit(limit)
+    )
     users = result.scalars().all()
 
-    await set_cache(cache_key, [UserOut.model_validate(u).dict() for u in users])
-    return users
+    users_out = [UserOut.model_validate(u) for u in users]
+
+    response = {
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "total_pages": (total + limit - 1) // limit,
+        "data": users_out
+    }
+
+    await set_cache(cache_key, response)
+    return response
+
 
 
 @router.get("/{id}", response_model=UserOut)
@@ -50,7 +74,7 @@ async def update_user(id: int, data: UserUpdate, db: AsyncSession = Depends(get_
     if not user:
         raise HTTPException(404, "User not found")
 
-    for key, value in data.dict(exclude_unset=True).items():
+    for key, value in data.model_dump(exclude_unset=True).items():
         setattr(user, key, value)
 
     await db.commit()
@@ -93,7 +117,7 @@ async def user_stats(db: AsyncSession = Depends(get_db)):
     total = await db.scalar(select(func.count(User.id)))
     last_week = await db.scalar(
         select(func.count(User.id))
-        .where(User.created_at >= datetime.utcnow() - timedelta(days=7))
+        .where(User.created_at >= datetime.now(timezone.utc) - timedelta(days=7))
     )
 
     return {

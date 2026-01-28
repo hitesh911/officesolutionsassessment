@@ -12,12 +12,12 @@ async def lifespan(app: FastAPI):
 
     yield
 
-    # Shutdown (optional cleanup)
+    # Shutdown
     await engine.dispose()
 
 
 app = FastAPI(
-    title="FastAPI Assignment",
+    title="Backend Assignment",
     lifespan=lifespan
 )
 
