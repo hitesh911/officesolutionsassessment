@@ -1,369 +1,284 @@
-# 📘 README.md
-
-```markdown
 # FastAPI Backend Assessment Project
 
-## 📌 Project Overview
+## Overview
 
-This project is a scalable backend API built using **FastAPI**, **PostgreSQL**, and **Redis**.
+This project is a scalable backend API built using FastAPI, PostgreSQL, and Redis.  
+It demonstrates CRUD operations, caching, filtering, aggregation queries, and relational data handling between Users and Posts.
 
-The application implements:
-
-- Full CRUD operations for Users
-- Caching using Redis
-- Filtering and search endpoints
-- Aggregation queries
-- Relational data handling between Users and Posts
-- Async architecture for performance and scalability
-
-The goal of this project is to demonstrate backend API design, database integration, caching strategies, and clean architecture principles.
+The application is fully asynchronous and designed with clean architecture principles suitable for production-grade systems.
 
 ---
 
-# 🏗️ Architecture Overview
+## Tech Stack
 
-This application follows a modular, layered structure:
-
-- **Router Layer** → API endpoints
-- **Schema Layer** → Data validation (Pydantic)
-- **ORM Layer** → SQLAlchemy models
-- **Database Layer** → Async PostgreSQL engine
-- **Caching Layer** → Redis integration
-- **Application Lifecycle Management** → FastAPI lifespan handler
-
-All database interactions are asynchronous using `asyncpg`.
+- FastAPI
+- PostgreSQL
+- SQLAlchemy (Async)
+- asyncpg
+- Redis
+- Docker
+- Pydantic
 
 ---
 
-# 🛠️ Tech Stack
+## Features
 
-| Component | Technology |
-|------------|------------|
-| API Framework | FastAPI |
-| Database | PostgreSQL |
-| ORM | SQLAlchemy (Async) |
-| DB Driver | asyncpg |
-| Cache | Redis |
-| Containerization | Docker |
-| Validation | Pydantic |
+### 1. User CRUD Operations
 
----
+- `POST /users` – Create a new user
+- `GET /users` – Fetch all users (with pagination)
+- `GET /users/{id}` – Fetch a single user
+- `PUT /users/{id}` – Update a user
+- `DELETE /users/{id}` – Delete a user
 
-# 📂 Project Structure
+Pagination example:
 
 ```
-
-app/
-│
-├── main.py              # App entry point
-├── database.py          # DB configuration
-├── models.py            # SQLAlchemy models
-├── schemas.py           # Pydantic schemas
-├── cache.py             # Redis caching layer
-│
-└── routers/
-├── users.py         # User endpoints
-└── posts.py         # Post endpoints
-
-.env
-README.md
-DEVELOPER_DOCUMENTATION.md
-
-```
-
----
-
-# 🚀 Features Implemented
-
----
-
-## ✅ Task 1 – CRUD API Endpoints
-
-### Users
-
-| Method | Endpoint | Description |
-|--------|----------|------------|
-| POST | `/users` | Create new user |
-| GET | `/users` | Get all users (with pagination) |
-| GET | `/users/{id}` | Get single user |
-| PUT | `/users/{id}` | Update user |
-| DELETE | `/users/{id}` | Delete user |
-
-### Pagination
-
-```
-
 GET /users?skip=0&limit=10
-
 ```
 
 ---
 
-## ✅ Task 2 – Redis Caching
+### 2. Redis Caching
 
-- `GET /users` is cached
-- Cache key format:
-```
+- `GET /users` responses are cached in Redis
+- Cache key format: `users:{skip}:{limit}`
+- Cache invalidates automatically when:
+  - A user is created
+  - A user is updated
+  - A user is deleted
 
-users:{skip}:{limit}
-
-```
-- Cache invalidation triggered on:
-- User creation
-- User update
-- User deletion
-
-This reduces database load for frequently accessed endpoints.
+This reduces database load and improves performance.
 
 ---
 
-## ✅ Task 3 – Filtering & Aggregation
+### 3. Filtering and Search
 
-### Search Users
+Search users with query parameters:
 
 ```
-
 GET /users/search?name=John&created_after=2025-01-01
-
 ```
 
 Supports:
-- Name filtering (case insensitive)
-- Created after date filtering
+- Partial name matching
+- Date-based filtering
 
 ---
 
-### User Statistics
+### 4. Aggregation Endpoints
+
+#### User Statistics
 
 ```
-
 GET /users/stats
-
 ```
 
 Returns:
 - Total users
-- Users created in last 7 days
+- Users created in the last 7 days
+
+#### Post Statistics
+
+```
+GET /posts/stats
+```
+
+Returns:
+- Number of posts per user
 
 ---
 
-## ✅ Task 4 – Dynamic Data & Relationships
+### 5. Posts and Relationships
+
+- One user can have multiple posts
+- Foreign key validation enforced
+- Posts cannot be created for non-existing users
+
+Endpoints:
+
+- `POST /posts`
+- `GET /posts?user_id=1`
+- `GET /posts/stats`
+
+---
+
+## Database Schema
+
+### Users Table
+
+| Column      | Type      | Description        |
+|------------|----------|--------------------|
+| id         | Integer  | Primary Key        |
+| name       | String   | Required           |
+| email      | String   | Unique             |
+| created_at | Timestamp| Auto-generated     |
+
+---
 
 ### Posts Table
 
-- Linked to users via foreign key
-- One user → many posts
-- Foreign key validation enforced
-
-### Post Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|------------|
-| POST | `/posts` | Create post for user |
-| GET | `/posts?user_id=1` | Fetch posts by user |
-| GET | `/posts/stats` | Posts per user |
+| Column      | Type      | Description                 |
+|------------|----------|-----------------------------|
+| id         | Integer  | Primary Key                 |
+| user_id    | Integer  | Foreign Key → users.id      |
+| title      | String   | Required                    |
+| content    | String   | Required                    |
+| created_at | Timestamp| Auto-generated              |
 
 ---
 
-# 🗄️ Database Schema
-
-## Users Table
-
-| Column | Type | Description |
-|--------|------|------------|
-| id | Integer | Primary Key |
-| name | String | Required |
-| email | String | Unique |
-| created_at | Timestamp | Auto-generated |
-
----
-
-## Posts Table
-
-| Column | Type | Description |
-|--------|------|------------|
-| id | Integer | Primary Key |
-| user_id | Integer | Foreign Key → users.id |
-| title | String | Required |
-| content | String | Required |
-| created_at | Timestamp | Auto-generated |
-
----
-
-# ⚙️ Setup Instructions
-
----
-
-## 1️⃣ Clone Repository
+## Project Structure
 
 ```
+app/
+│
+├── main.py
+├── database.py
+├── models.py
+├── schemas.py
+├── cache.py
+│
+└── routers/
+    ├── users.py
+    └── posts.py
+```
 
-git clone <your_repo_url>
+---
+
+## Setup Instructions
+
+### 1. Clone the Repository
+
+```
+git clone <repository_url>
 cd fastapi-backend
-
 ```
 
 ---
 
-## 2️⃣ Create Virtual Environment
+### 2. Create Virtual Environment
 
 Windows:
 
 ```
-
 python -m venv venv
 venv\Scripts\activate
-
 ```
 
 Mac/Linux:
 
 ```
-
 python3 -m venv venv
 source venv/bin/activate
-
 ```
 
 ---
 
-## 3️⃣ Install Dependencies
+### 3. Install Dependencies
 
 ```
-
 pip install fastapi uvicorn sqlalchemy asyncpg redis python-dotenv
-
 ```
 
 ---
 
-## 4️⃣ Setup PostgreSQL
+### 4. Setup PostgreSQL
 
-Create a database:
+Create a database named:
 
 ```
-
 fastapi_db
-
 ```
 
-Update `.env`:
+Create a `.env` file:
 
 ```
-
 DATABASE_URL=postgresql+asyncpg://postgres:yourpassword@localhost:5432/fastapi_db
 REDIS_URL=redis://localhost:6379/0
-
 ```
 
 ---
 
-## 5️⃣ Run Redis (Docker)
+### 5. Run Redis Using Docker
 
 ```
-
 docker run -d -p 6379:6379 --name fastapi-redis redis
-
 ```
 
 Verify:
 
 ```
-
 docker ps
-
 ```
 
 ---
 
-## 6️⃣ Run Application
+### 6. Run the Application
 
 ```
-
 uvicorn app.main:app --reload
-
 ```
 
-Open:
+Access Swagger UI:
 
 ```
-
-[http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
-
+http://127.0.0.1:8000/docs
 ```
-
-Swagger UI available for testing.
 
 ---
 
-# 🧪 Example API Flow
+## Design Decisions
 
-1. Create user
-2. Create post with valid `user_id`
-3. Fetch users (cached)
-4. Fetch posts by user
-5. Check stats endpoints
+- Async architecture for scalability
+- Redis caching to reduce DB load
+- Database-level aggregation queries
+- Proper foreign key validation
+- Clean modular router-based structure
+- Modern FastAPI lifespan event handling
 
 ---
 
-# ⚡ Performance Considerations
+## Error Handling
 
-- Fully async architecture
-- Database-level aggregations
+- 404 returned for non-existing users
+- 400 returned for invalid foreign key references
+- Database rollbacks handled properly
+- No raw database exceptions exposed to clients
+
+---
+
+## Performance Considerations
+
+- Non-blocking async DB operations
 - Redis caching layer
-- Pagination to reduce large payloads
-- Explicit error handling
-- Controlled foreign key validation
+- Pagination support
+- Aggregation handled at DB level
 
 ---
 
-# 🧠 Design Decisions
+## Future Improvements
 
-- Used `asyncpg` for non-blocking DB operations
-- Used Redis instead of in-memory cache to simulate production caching
-- Implemented lifespan event handler (modern FastAPI pattern)
-- Used modular routers for maintainability
-- Enforced relational integrity at DB level
-
----
-
-# 🛡️ Error Handling
-
-- 404 for non-existing users
-- 400 for invalid foreign key reference
-- No raw database errors exposed
-- Proper rollback on integrity errors
-
----
-
-# 🔮 Future Improvements
-
-- Authentication (JWT)
+- JWT Authentication
 - Role-based authorization
-- Unit & integration tests
-- Logging middleware
 - Rate limiting
-- Docker Compose for full stack setup
-- CI/CD integration
-- API versioning
+- Logging middleware
+- Unit and integration testing
+- Docker Compose setup
+- CI/CD pipeline
 
 ---
 
-# 📖 Developer Documentation
+## Developer Documentation
 
-See:
+Detailed technical documentation is available in:
+
 ```
-
 DEVELOPER_DOCUMENTATION.md
-
 ```
 
 ---
 
-# 👨‍💻 Author
+## Author
 
 Developed as part of a backend technical assessment using FastAPI, PostgreSQL, and Redis.
-```
-
-
-
